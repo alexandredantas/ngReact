@@ -141,28 +141,25 @@
   //         }
   //     }));
   //
-  var reactComponent = function($timeout, $injector) {
+  var reactComponent = function($timeout, $injector, $parse) {
     return {
       restrict: 'E',
       replace: true,
-      link: function(scope, elem, attrs) {
+      require: ['^ngController'],
+      link: function(scope, elem, attrs, controller) {
         var reactComponent = getReactComponent(attrs.name, $injector);
 
         var renderMyComponent = function() {
-          var scopeProps = scope.$eval(attrs.props);
-          var props = applyFunctions(scopeProps, scope);
-
-          renderComponent(reactComponent, props, $timeout, elem);
+          renderComponent(reactComponent, applyFunctions(controller[0], scope), $timeout, elem);
         };
-
-        // If there are props, re-render when they change
-        attrs.props ?
-            watchProps(attrs.watchDepth, scope, [attrs.props], renderMyComponent) :
-          renderMyComponent();
 
         // cleanup when scope is destroyed
         scope.$on('$destroy', function() {
           React.unmountComponentAtNode(elem[0]);
+        });
+
+        scope.$on('$reactRender', function() {
+            renderMyComponent();
         });
       }
     };
@@ -196,38 +193,28 @@
   //     <hello name="name"/>
   //
   var reactDirective = function($timeout, $injector) {
-    return function(reactComponentName, propNames, conf) {
+    return function(reactComponentName, conf) {
       var directive = {
         restrict: 'E',
         replace: true,
-        link: function(scope, elem, attrs) {
+        require: ['^ngController'],
+        link: function(scope, elem, attrs, controller) {
           var reactComponent = getReactComponent(reactComponentName, $injector);
-
-          // if propNames is not defined, fall back to use the React component's propTypes if present
-          propNames = propNames || Object.keys(reactComponent.propTypes || {});
 
           // for each of the properties, get their scope value and set it to scope.props
           var renderMyComponent = function() {
-            var props = {};
-            propNames.forEach(function(propName) {
-              props[propName] = scope.$eval(attrs[propName]);
-            });
-            renderComponent(reactComponent, applyFunctions(props, scope), $timeout, elem);
+            renderComponent(reactComponent, applyFunctions(controller[0], scope), $timeout, elem);
           };
-
-          // watch each property name and trigger an update whenever something changes,
-          // to update scope.props with new values
-          var propExpressions = propNames.map(function(k){
-            return attrs[k];
-          });
-
-          watchProps(attrs.watchDepth, scope, propExpressions, renderMyComponent);
 
           renderMyComponent();
 
           // cleanup when scope is destroyed
           scope.$on('$destroy', function() {
             React.unmountComponentAtNode(elem[0]);
+          });
+
+          scope.$on('$reactRender', function() {
+              renderMyComponent();
           });
         }
       };
@@ -237,6 +224,6 @@
 
   // create the end module without any dependencies, including reactComponent and reactDirective
   return angular.module('react', [])
-    .directive('reactComponent', ['$timeout', '$injector', reactComponent])
-    .factory('reactDirective', ['$timeout','$injector', reactDirective]);
+    .directive('reactComponent', ['$timeout', '$injector', '$parse', reactComponent])
+    .factory('reactDirective', ['$timeout','$injector', '$parse', reactDirective]);
 }));
