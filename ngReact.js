@@ -141,7 +141,7 @@
   //         }
   //     }));
   //
-  var reactComponent = function($timeout, $injector, $parse) {
+  var reactComponent = function($timeout, $injector) {
     return {
       restrict: 'E',
       replace: true,
@@ -224,6 +224,6 @@
 
   // create the end module without any dependencies, including reactComponent and reactDirective
   return angular.module('react', [])
-    .directive('reactComponent', ['$timeout', '$injector', '$parse', reactComponent])
-    .factory('reactDirective', ['$timeout','$injector', '$parse', reactDirective]);
+    .directive('reactComponent', ['$timeout', '$injector', reactComponent])
+    .factory('reactDirective', ['$timeout','$injector', reactDirective]);
 }));
