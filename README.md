@@ -84,11 +84,7 @@ var HelloComponent = React.createClass({
 app.value('HelloComponent', HelloComponent);
 ```
 
-The component can be used in an Angular view using the react-component directive like so, where:
-
-- the name attribute checks for an Angular injectable of that name and falls back to a globally exposed variable of the same name, and
-- the props attribute indicates what scope properties should be exposed to the React component
-- the watch-depth attribute indicates what watch strategy to use to detect changes on scope properties.  The possible values for react-component are `reference` and `value` (default)
+The component can be used in an Angular view using the react-component directive like so:
 
 ```html
 <body ng-app="app">
@@ -98,16 +94,22 @@ The component can be used in an Angular view using the react-component directive
 </body>
 ```
 
+Here:
+
+- `name` attribute checks for an Angular injectable of that name and falls back to a globally exposed variable of the same name, and
+- `props` attribute indicates what scope properties should be exposed to the React component
+- `watch-depth` attribute indicates what watch strategy to use to detect changes on scope properties.  The possible values for react-component are `reference` and `value` (default)
+
 ## The reactDirective service
 
 The reactDirective factory, in contrast to the reactComponent directive, is meant to create specific directives corresponding to React components. In the background, this actually creates and sets up directives specifically bound to the specified React component.
 
-If, for example, you wanted to use the same React component in multiple places, you'd have to specify &lt;react-component name="yourComponent" props="props" /&gt; repeatedly, but if you used reactDirective factory, you could create a yourComponent directive and simply use that everywhere.
+If, for example, you wanted to use the same React component in multiple places, you'd have to specify `<react-component name="yourComponent" props="props"></react-component>` repeatedly, but if you used reactDirective factory, you could create a `<your-component></your-component>` directive and simply use that everywhere.
 
 The service takes the React component as the argument.
 
 ```javascript
-app.directive('hello', function(reactDirective) {
+app.directive('helloComponent', function(reactDirective) {
   return reactDirective(HelloComponent);
 });
 ```
@@ -115,7 +117,7 @@ app.directive('hello', function(reactDirective) {
 Alternatively you can provide the name of the component
 
 ```javascript
-app.directive('hello', function(reactDirective) {
+app.directive('helloComponent', function(reactDirective) {
   return reactDirective('HelloComponent');
 });
 ```
@@ -125,7 +127,7 @@ This creates a directive that can be used like this:
 ```html
 <body ng-app="app">
   <div ng-controller="helloController">
-    <hello fname="person.fname" lname="person.lname" watch-depth="reference"/>
+    <hello-component fname="person.fname" lname="person.lname" watch-depth="reference"></hello-component>
   </div>
 </body>
 ```
@@ -151,7 +153,7 @@ A lot of automatic annotation libraries including ng-annotate skip implicit anno
 ```
 Unknown provider: eProvider <- e <- helloDirective
 ```
-To fix it add explicit annotation of dependency 
+To fix it add explicit annotation of dependency
 ```javascript
 var helloDirective = function(reactDirective) {
   return reactDirective('HelloComponent');
@@ -239,3 +241,5 @@ grunt karma:background watch
 - @ethul
 - Devin Jett (@djett41)
 - Marek Kalnik (@marekkalnik)
+- @oriweingart
+- Basarat Ali Syed (@basarat)
