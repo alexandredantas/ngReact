@@ -4,7 +4,9 @@
 require('es5-shim');
 require('../ngReact');
 
-var React = require( 'react/addons' );
+var React = require( 'react' );
+var ReactTestUtils = require( 'react-addons-test-utils' );
+var ReactDOM = require( 'react-dom' );
 var angular = require( 'angular' );
 require( 'angular-mocks' );
 
@@ -16,7 +18,10 @@ var Hello = React.createClass({
   },
 
   handleClick() {
-    this.props.changeName();
+    var value = this.props.changeName();
+    if (value){
+      window.GlobalChangeNameValue = value;
+    }
   },
 
   render() {
@@ -177,10 +182,66 @@ describe('react-directive', () => {
       );
       expect(elm.text().trim()).toEqual('Hello Clark Kent');
 
-      React.addons.TestUtils.Simulate.click( elm[0].firstChild );
+      ReactTestUtils.Simulate.click( elm[0].firstChild );
       $timeout.flush();
 
       expect(elm.text().trim()).toEqual('Hello Bruce Banner');
+
+    }));
+
+    it(': callback should not fail when executed inside a scope apply', inject(($rootScope, $timeout) => {
+      var scope = $rootScope.$new();
+      scope.person = {
+        fname: 'Clark', lname: 'Kent'
+      };
+      scope.change = () => {
+        scope.person.fname = 'Bruce';
+        scope.person.lname = 'Banner';
+      };
+
+      var elm = compileElement(
+        '<hello fname="person.fname" lname="person.lname" change-name="change"/>',
+        scope
+      );
+
+      scope.$apply(() => {
+        expect(function() {
+            ReactTestUtils.Simulate.click( elm[0].firstChild )
+        }).not.toThrow();
+      });
+    }));
+
+    it('should return callbacks value', inject(($rootScope, $timeout) => {
+      var scope = $rootScope.$new();
+      scope.person = {
+        fname: 'Clark', lname: 'Kent'
+      };
+      scope.change = () => {
+        scope.person.fname = 'Bruce';
+        scope.person.lname = 'Banner';
+        return scope.person.fname + ' ' + scope.person.lname;
+      };
+
+      window.GlobalChangeNameValue = 'Clark Kent';
+
+      expect(window.GlobalChangeNameValue).toEqual('Clark Kent');
+
+      var elm = compileElement(
+        '<hello fname="person.fname" lname="person.lname" change-name="change"/>',
+        scope
+      );
+
+      expect(elm.text().trim()).toEqual('Hello Clark Kent');
+
+      expect(window.GlobalChangeNameValue).toEqual('Clark Kent');
+
+      ReactTestUtils.Simulate.click( elm[0].firstChild );
+      $timeout.flush();
+
+      expect(elm.text().trim()).toEqual('Hello Bruce Banner');
+
+      expect(window.GlobalChangeNameValue).toEqual('Bruce Banner');
+
     }));
 
     it('should scope.$apply() callback invocations made after changing props directly', inject(($rootScope, $timeout) => {
@@ -204,7 +265,7 @@ describe('react-directive', () => {
       expect(elm.children().eq(0).text().trim()).toEqual('0');
 
       // first callback invocation
-      React.addons.TestUtils.Simulate.click( elm[0].children.item(1).lastChild );
+      ReactTestUtils.Simulate.click( elm[0].children.item(1).lastChild );
       $timeout.flush(100);
 
       expect(elm.children().eq(0).text().trim()).toEqual('1');
@@ -217,7 +278,7 @@ describe('react-directive', () => {
       expect(elm.children().eq(0).text().trim()).toEqual('1');
 
       // second callback invocation
-      React.addons.TestUtils.Simulate.click( elm[0].children.item(1).lastChild );
+      ReactTestUtils.Simulate.click( elm[0].children.item(1).lastChild );
       $timeout.flush(100);
 
       expect(elm.children().eq(0).text().trim()).toEqual('2');
@@ -389,7 +450,7 @@ describe('react-directive', () => {
       //unmountComponentAtNode returns:
       // * true if a component was unmounted and
       // * false if there was no component to unmount.
-      expect( React.unmountComponentAtNode(elm[0])).toEqual(false);
+      expect( ReactDOM.unmountComponentAtNode(elm[0])).toEqual(false);
     }));
   });
 });
